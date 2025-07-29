@@ -1,0 +1,19 @@
+name: Docker Build with Dev File
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker image from Dockerfile.dev
+        run: docker build -t TESTME -f Dockerfile.dev .
+
+      - name: Run tests inside Docker container
+        run: docker run -e CI=true TESTME npm run test

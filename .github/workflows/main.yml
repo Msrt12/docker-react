@@ -1,4 +1,4 @@
-name: Deploy to AWS Elastic Beanstalk
+name: Docker Build with Dev File
 
 on:
   push:
@@ -8,29 +8,38 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Install zip
+      # 2. Build Docker image from Dockerfile.dev
+      - name: Build Docker image
+        run: docker build -t testme -f Dockerfile.dev .
+
+      # 3. Run tests inside Docker container
+      - name: Run tests
+        run: docker run -e CI=true testme npm run test
+
+      # 4. Install zip
       - name: Install zip
         run: sudo apt-get install zip -y
 
-      # 3. Archive everything (з Dockerfile в корені!)
-      - name: Archive deployment package
-        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip * .[^.]*
+      # 5. Архівація потрібних файлів для деплою
+      - name: Create deployment zip
+        run: zip -r build-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
 
-      # 4. Upload zip to S3
+      # 6. Завантаження .zip на S3
       - name: Upload to S3
         run: |
-          aws s3 cp app-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip
+          aws s3 cp build-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/build-${{ github.sha }}-${{ github.run_number }}.zip
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
 
-      # 5. Deploy to Elastic Beanstalk
+      # 7. Деплой через GitHub Action
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
@@ -39,8 +48,8 @@ jobs:
           application_name: frontend
           environment_name: frontend-env
           region: us-east-1
-          version_label: app-${{ github.sha }}-${{ github.run_number }}
-          deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
+          version_label: build-${{ github.sha }}-${{ github.run_number }}
+          deployment_package: build-${{ github.sha }}-${{ github.run_number }}.zip
           existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
           use_existing_version_if_available: true
           wait_for_deployment: true

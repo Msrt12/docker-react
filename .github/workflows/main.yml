@@ -23,7 +23,8 @@ jobs:
 
       # 4. Archive deployment package
       - name: Archive files for deployment
-        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
+        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile build/ .ebextensions/
+
 
       # 5. Debug archive content (optional)
       - name: Show ZIP content

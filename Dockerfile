@@ -1,6 +1,6 @@
-FROM node:16-alpine as builder
+FROM node:lts-alpine AS builder
 
-WORKDIR ./usr/app
+WORKDIR /usr/app
 
 
 COPY ./package.json ./
@@ -14,4 +14,4 @@ RUN npm run build
 
 FROM nginx
 
-COPY --from=builder /usr/app/build /usr/share/nginx/html
+COPY --from=builder /usr/app/build /usr/share/nginx/html  

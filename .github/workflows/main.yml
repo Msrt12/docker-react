@@ -1,4 +1,4 @@
-name: Docker Build with Dev File
+name: Deploy React App to Elastic Beanstalk (Docker)
 
 on:
   push:
@@ -8,41 +8,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Build Docker image from Dockerfile.dev
-      run: docker build -t testme -f Dockerfile.dev .
+      # 2. Build Docker image from Dockerfile
+      - name: Build Docker image
+        run: docker build -t my-react-app .
 
-    - name: Run tests inside Docker container
-      run: docker run -e CI=true testme npm run test
+      # 3. Install zip
+      - name: Install zip
+        run: sudo apt-get install zip -y
 
-    - name: Install zip
-      run: sudo apt-get install zip -y
+      # 4. Archive deployment package
+      - name: Archive files for deployment
+        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
 
-    # 5. Архівація потрібних файлів для деплою
-    - name: Create deployment zip
-      run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
+      # 5. Debug archive content (optional)
+      - name: Show ZIP content
+        run: unzip -l app-${{ github.sha }}-${{ github.run_number }}.zip
 
-    # 6. Завантаження .zip на S3
-    - name: Upload to S3
-      run: |
-        aws s3 cp app-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip --region us-east-1
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # 6. Upload to S3
+      - name: Upload to S3
+        run: |
+          aws s3 cp app-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
-    - name: Deploy the project
-      uses: einaregilsson/beanstalk-deploy@v21
-      with:
-        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        application_name: frontend
-        environment_name: frontend-env
-        region: us-east-1
-        version_label: ${{ github.sha }}-${{ github.run_number }}
-        deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
-        existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
-        use_existing_version_if_available: true
-        wait_for_deployment: true
+      # 7. Deploy to Elastic Beanstalk
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: frontend
+          environment_name: frontend-env
+          region: us-east-1
+          version_label: ${{ github.sha }}-${{ github.run_number }}
+          deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
+          existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
+          use_existing_version_if_available: true
+          wait_for_deployment: true

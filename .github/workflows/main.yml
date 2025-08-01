@@ -10,40 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Build Docker image from Dockerfile.dev
-        run: docker build -t testme -f Dockerfile.dev .
+    - name: Build Docker image from Dockerfile.dev
+      run: docker build -t testme -f Dockerfile.dev .
 
-      - name: Run tests inside Docker container
-        run: docker run -e CI=true testme npm run test
+    - name: Run tests inside Docker container
+      run: docker run -e CI=true testme npm run test
 
-      - name: Install zip
-        run: sudo apt-get install zip -y
+    - name: Install zip
+      run: sudo apt-get install zip -y
 
-      # 5. Архівація потрібних файлів для деплою
-      - name: Create deployment zip
-        run: zip -r app.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
+    # 5. Архівація потрібних файлів для деплою
+    - name: Create deployment zip
+      run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile .ebextensions/ public/ src/ package.json package-lock.json
 
-      # 6. Завантаження .zip на S3
-      - name: Upload to S3
-        run: |
-          aws s3 cp app.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip --region us-east-1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      
-      
-      - name: Deploy the project
-        uses: einaregilsson/beanstalk-deploy@v21
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: frontend
-          environment_name: frontend-env
-          region: us-east-1
-          version_label: ${{ github.sha }}-${{ github.run_number }}
-          deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
-          existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
-          use_existing_version_if_available: true
-          wait_for_deployment: true
+    # 6. Завантаження .zip на S3
+    - name: Upload to S3
+      run: |
+        aws s3 cp app-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip --region us-east-1
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Deploy the project
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: frontend
+        environment_name: frontend-env
+        region: us-east-1
+        version_label: ${{ github.sha }}-${{ github.run_number }}
+        deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
+        existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
+        use_existing_version_if_available: true
+        wait_for_deployment: true

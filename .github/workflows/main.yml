@@ -43,7 +43,7 @@ jobs:
           environment_name: frontend-env
           region: us-east-1
           version_label: ${{ github.sha }}
-          deployment_package: ${{ github.sha }}.zip
+          deployment_package: app.zip
           existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
           use_existing_version_if_available: true
           wait_for_deployment: true

@@ -1,6 +1,6 @@
-FROM node:lts-alpine AS builder
+FROM node:16-alpine AS builder
 
-WORKDIR /usr/app
+WORKDIR ./usr/app
 
 
 COPY ./package.json ./

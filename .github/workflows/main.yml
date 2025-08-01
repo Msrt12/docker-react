@@ -40,9 +40,10 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: frontend            # ← заміни
-          environment_name: Frontend-env             # ← заміни
+          application_name: frontend
+          environment_name: frontend-env
           version_label: ${{ github.sha }}
           region: us-east-1
-          bucket_name: elasticbeanstalk-us-east-1-947625949622
-          bucket_key: app.zip
+          existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
+          deployment_package: app.zip
+          wait_for_deployment: true

@@ -1,4 +1,4 @@
-name: Deploy React App to Elastic Beanstalk (Docker)
+name: Deploy to AWS Elastic Beanstalk
 
 on:
   push:
@@ -13,24 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Build Docker image from Dockerfile
-      - name: Build Docker image
-        run: docker build -t my-react-app .
-
-      # 3. Install zip
+      # 2. Install zip
       - name: Install zip
         run: sudo apt-get install zip -y
 
-      # 4. Archive deployment package
-      - name: Archive files for deployment
-        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip Dockerfile build/ .ebextensions/
+      # 3. Archive everything (з Dockerfile в корені!)
+      - name: Archive deployment package
+        run: zip -r app-${{ github.sha }}-${{ github.run_number }}.zip * .[^.]*
 
-
-      # 5. Debug archive content (optional)
-      - name: Show ZIP content
-        run: unzip -l app-${{ github.sha }}-${{ github.run_number }}.zip
-
-      # 6. Upload to S3
+      # 4. Upload zip to S3
       - name: Upload to S3
         run: |
           aws s3 cp app-${{ github.sha }}-${{ github.run_number }}.zip s3://elasticbeanstalk-us-east-1-947625949622/app-${{ github.sha }}-${{ github.run_number }}.zip
@@ -39,7 +30,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
 
-      # 7. Deploy to Elastic Beanstalk
+      # 5. Deploy to Elastic Beanstalk
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
@@ -48,7 +39,7 @@ jobs:
           application_name: frontend
           environment_name: frontend-env
           region: us-east-1
-          version_label: ${{ github.sha }}-${{ github.run_number }}
+          version_label: app-${{ github.sha }}-${{ github.run_number }}
           deployment_package: app-${{ github.sha }}-${{ github.run_number }}.zip
           existing_bucket_name: elasticbeanstalk-us-east-1-947625949622
           use_existing_version_if_available: true

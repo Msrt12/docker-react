@@ -51,5 +51,5 @@ jobs:
           version_label: build-${{ github.sha }}-${{ github.run_number }}
           deployment_package: build-${{ github.sha }}-${{ github.run_number }}.zip
           existing_bucket_name: mykola-react-frontend-deployments
-          use_existing_version_if_available: false
+          use_existing_version_if_available: true
           wait_for_deployment: true
